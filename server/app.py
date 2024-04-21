@@ -18,6 +18,8 @@ db.init_app(app)
 
 api = Api(app)
 
+
+
 class ClearSession(Resource):
 
     def delete(self):
@@ -52,6 +54,44 @@ api.add_resource(ClearSession, '/clear')
 api.add_resource(IndexArticle, '/articles')
 api.add_resource(ShowArticle, '/articles/<int:id>')
 
+@app.route('/login', methods=['POST'])
+def login():
+    req_data = request.get_json()
+    username = req_data.get('username')
+
+    if username in user:
+        user = user[username]
+        session['user_id'] = user['id']
+        return jsonify(user), 200
+    else:
+        return "User not found", 404
+
+@app.route('/logout', methods=['DELETE'])
+def logout():
+    session.pop('user_id', None)
+    return '', 204
+
+@app.route('/check_session', methods=['GET'])
+def check_session():
+    user_id = session.get('user_id')
+
+    if user_id:
+        for user in user.values():
+            if user['id'] == user_id:
+                return jsonify(user), 200
+
+    return '', 401
+
+
+class Login(Resource):
+    def post(self):
+        user=User.query.filter(
+            user.username == request.get_json()['username']
+        ).first()
+
+        session['user_id']= user.id
+        return user.to_dict()
+    
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
